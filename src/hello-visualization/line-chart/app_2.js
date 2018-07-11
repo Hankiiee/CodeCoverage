@@ -9,8 +9,12 @@ const repos = 12;
 // session.on('traffic:*', (dir, data) => console.log(dir === 'sent' ? '->' : '<-', JSON.stringify(data)));
 async function run() {
     // Laddar script (Changed to `` instead of '' to utilize multi lines. added filtering to the load to remove certain repositories)
+    var fs = require('fs');
+    fs.copyFile('//rd-file/OneData/APTKData/CoverageData/Coverage.qvd', '../../../data/binary.qvd', function(err){
+        if (err) throw err;
+    });   
     const script = `
-  LOAD * FROM [lib://prom/Coverage_henrik.qvd](qvd)
+  LOAD * FROM [lib://prom/binary.qvd](qvd)
   WHERE NOT Match([repository_name], 'geo-route','geo-mapchart', 'geo-operations', 'geo-server','la-vie','locman','reporting-service','sense-client','api-monitor-service');
 `;
     const global = await session.open();
@@ -385,7 +389,7 @@ async function run() {
         return pref;
     }
     const layout = await obj.getLayout();
-  
+
     let first = 0;
     // ctemp = last coverage and the last time it was changed
     let ctemp = [];
@@ -527,10 +531,22 @@ async function run() {
             currProc: current[j],
             lastProc: change[0],
             lastCommit: latest_commit[j],
-            lastChange: change[1]
+            lastChange: change[1],
+            beat: theObject.beat[j],
+            month: theObject.month[j],
+            quarter: theObject.quarter[j],
+            year: theObject.year[j]
             }
     }
-    console.log(JSON.stringify(jsons));
+    console.log(jsons);
+    const content = JSON.stringify(jsons).replace(/\"([^(\")"]+)\":/g,"$1:"); 
+    fs.writeFile("../../../data/content.json", content, 'utf8', function (err) {
+        if (err) {
+            return console.log(err);
+        }
+    
+        console.log("The file was saved!");
+    }); 
     await session.close();
 }
 (async () => {
